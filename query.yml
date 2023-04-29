@@ -1,0 +1,27 @@
+queries:
+- operator: OR
+  fields:
+    - title
+    - abstract
+    - keywords
+  terms:
+    - automation
+    - control program
+    - control software
+- operator: OR
+  fields:
+    - title
+    - abstract
+    - keywords
+  terms:
+    - software
+    - program
+- fields:
+    - all
+  terms:
+    - Programmable Logic Controller
+- fields:
+    - all
+  terms:
+    - Power Line Communications
+  negated: true
