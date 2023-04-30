@@ -14,11 +14,6 @@ class Field(Enum):
 
 
 class SingleQuery:
-    operator: Operator = Operator.OR
-    negated: bool = False
-    fields: list[Field]
-    terms: list[str]
-
     def __init__(
         self, operator: Operator, negated: bool, fields: list[Field], terms: list[str]
     ):
@@ -29,9 +24,6 @@ class SingleQuery:
 
 
 class Query:
-    operator: Operator
-    queries: list  # SingleQuery or Query
-
     def __init__(self, operator: Operator, queries: list):
         self.operator = operator
         self.queries = queries
