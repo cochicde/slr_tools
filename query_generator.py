@@ -4,6 +4,8 @@ from query.exporter.serializer import get_query_string
 from query.exporter.scopus import ScopusQuery
 from query.exporter.ieee import IEEEQuery
 from query.exporter.acm import ACMQuery
+from database.remote.scopus import ScopusDatabase
+from parameters.provider import Provider
 
 
 def main():
@@ -13,15 +15,34 @@ def main():
         "-f", "--file", help="File with the query source words", default="./query.yml"
     )
 
+    parser.add_argument(
+        "-p",
+        "--parameter",
+        help="Paramter to one of the conectors in the form CONNECTOR_NAME.PARAMETER",
+        action="append",
+    )
+
     args = parser.parse_args()
+
+    # initilize global parameter provider
+    Provider.initialize(args.parameter)
 
     query = query_from_yaml(args.file)
 
-    print(get_query_string(query, IEEEQuery))
-    print("")
-    print(get_query_string(query, ACMQuery))
-    print("")
-    print(get_query_string(query, ScopusQuery))
+    scopus = ScopusDatabase()
+    resources = scopus.request(query)
+
+    for resource in resources:
+        print(
+            "doi:"
+            + resource.doi
+            + ", title:"
+            + resource.title
+            + ", abstract:"
+            + resource.abstract
+            + ", link: "
+            + resource.link
+        )
 
 
 if __name__ == "__main__":
