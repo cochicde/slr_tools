@@ -23,11 +23,14 @@ class ScopusConnector(Connector):
         ResourceFields.TITLE: "dc:title",
         ResourceFields.LINK: "prism:url",
         ResourceFields.ABSTRACT: "dc:description",
+        ResourceFields.ISBN: "prism:isbn",
+        ResourceFields.ISSN: "prism:issn",
     }
 
     def __init__(self) -> None:
         scopus_parameters = Parameters.get_parameters()
         self.token = scopus_parameters["token"]
+        self.institutional_token = scopus_parameters.get("institutional_token", None)
         self.next_link = None
 
     def next() -> list[ResourceData]:
@@ -37,9 +40,17 @@ class ScopusConnector(Connector):
         parameters = dict(
             query=query,
             field=",".join(ScopusConnector.__FIELDS_MAP.values()),
-            apiKey=self.token,
+            view="COMPLETE",
         )
-        response = requests.get(url=ScopusConnector.__API_URI__, params=parameters)
+
+        headers = {
+            "X-ELS-APIKey": self.token,
+            "X-ELS-Insttoken": self.institutional_token,
+        }
+
+        response = requests.get(
+            url=ScopusConnector.__API_URI__, params=parameters, headers=headers
+        )
         if not response.ok:
             return response.raise_for_status()
 
@@ -51,6 +62,15 @@ class ScopusConnector(Connector):
             doi = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.DOI], "")
             title = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.TITLE], "")
             link = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.LINK], "")
+            abstract = entry.get(
+                ScopusConnector.__FIELDS_MAP[ResourceFields.ABSTRACT], ""
+            )
+            issn = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.ISSN], "")
+            isbn = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.ISBN], "")
+
+            # isbn returns as an 1-element array of an object which has the actual isbn number under the '$' field
+            if isbn != "":
+                isbn = isbn[0]["$"]
 
             if title == "" or doi == "" or link == "":
                 print(
@@ -58,14 +78,7 @@ class ScopusConnector(Connector):
                     "\ntitle: " + title + "\nlink: " + link,
                 )
 
-            to_return.append(
-                ResourceData(
-                    doi,
-                    title,
-                    "",
-                    link,
-                )
-            )
+            to_return.append(ResourceData(doi, title, abstract, link, issn, isbn))
         return to_return
 
     def request(self, query: str) -> list[ResourceData]:

@@ -42,6 +42,10 @@ def main():
             + resource.abstract
             + ", link: "
             + resource.link
+            + ", issn: "
+            + resource.issn
+            + ", isbn: "
+            + resource.isbn
         )
 
 
