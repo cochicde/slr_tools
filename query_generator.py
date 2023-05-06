@@ -6,20 +6,31 @@ from query.exporter.ieee import IEEEQuery
 from query.exporter.acm import ACMQuery
 from database.remote.scopus import ScopusDatabase
 from parameters.provider import Provider
+from database.local.sqlite import Sqlite3
 
 
 def main():
     parser = argparse.ArgumentParser(prog="Query Generator")
 
     parser.add_argument(
-        "-f", "--file", help="File with the query source words", default="./query.yml"
+        "-q",
+        "--query-file",
+        help="File with the query source words",
+        default="./query.yml",
     )
 
     parser.add_argument(
         "-p",
         "--parameter",
-        help="Paramter to one of the conectors in the form CONNECTOR_NAME.PARAMETER",
+        help="Paramter to one of the modules in the form MODULE.PARAMETER=VALUE",
         action="append",
+    )
+
+    parser.add_argument(
+        "-d",
+        "--database",
+        help="Database where to store results",
+        default="test.db",
     )
 
     args = parser.parse_args()
@@ -27,26 +38,13 @@ def main():
     # initilize global parameter provider
     Provider.initialize(args.parameter)
 
-    query = query_from_yaml(args.file)
+    query = query_from_yaml(args.query_file)
 
-    scopus = ScopusDatabase()
-    resources = scopus.request(query)
+    scopus = ScopusDatabase(query)
+    resources = scopus.request()
 
-    for resource in resources:
-        print(
-            "doi:"
-            + resource.doi
-            + ", title:"
-            + resource.title
-            + ", abstract:"
-            + resource.abstract
-            + ", link: "
-            + resource.link
-            + ", issn: "
-            + resource.issn
-            + ", isbn: "
-            + resource.isbn
-        )
+    database = Sqlite3(args.database)
+    database.store(resources)
 
 
 if __name__ == "__main__":

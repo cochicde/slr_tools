@@ -6,12 +6,11 @@ from query.model.query import Query
 
 
 class ScopusDatabase:
-    def __init__(self) -> None:
-        self.connector = ScopusConnector()
-        self.query_exporter = ScopusQuery
+    def __init__(self, query: str) -> None:
+        self.connector = ScopusConnector(query)
 
-    def request(self, query: str) -> list[ResourceData]:
-        return self.connector.request(query)
+    def __init__(self, query: Query) -> None:
+        self.connector = ScopusConnector(get_query_string(query, ScopusQuery))
 
-    def request(self, query: Query) -> list[ResourceData]:
-        return self.connector.request(get_query_string(query, self.query_exporter))
+    def request(self) -> list[ResourceData]:
+        return self.connector.request()

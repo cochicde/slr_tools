@@ -1,12 +1,12 @@
-from literature.data import ResourceData
+from database.entry import Entry
 
 
 class Connector:
-    def __init__(self, args: dict) -> None:
+    def __init__(self, query: str) -> None:
         pass
 
-    def request(self, query: str) -> list[ResourceData]:
+    def request(self, query: str) -> list[Entry]:
         pass
 
-    def next() -> list[ResourceData]:
+    def next(self) -> list[Entry]:
         pass
