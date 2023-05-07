@@ -5,8 +5,18 @@ class Connector:
     def __init__(self, query: str) -> None:
         pass
 
-    def request(self, query: str) -> list[Entry]:
+    def request_all(self) -> list[Entry]:
+        to_return = self.request_first()
+        while True:
+            prev_len = len(to_return)
+            to_return.extend(self.request_next())
+            if len(to_return) == prev_len:
+                break
+
+        return to_return
+
+    def request_first(self) -> list[Entry]:
         pass
 
-    def next(self) -> list[Entry]:
+    def request_next(self) -> list[Entry]:
         pass

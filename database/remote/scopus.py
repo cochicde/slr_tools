@@ -12,5 +12,11 @@ class ScopusDatabase:
     def __init__(self, query: Query) -> None:
         self.connector = ScopusConnector(get_query_string(query, ScopusQuery))
 
-    def request(self) -> list[ResourceData]:
-        return self.connector.request()
+    def request_all(self) -> list[ResourceData]:
+        return self.connector.request_all()
+
+    def request_first(self) -> list[ResourceData]:
+        return self.connector.request_first()
+
+    def request_next(self) -> list[ResourceData]:
+        return self.connector.request_next()

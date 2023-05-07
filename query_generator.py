@@ -41,10 +41,12 @@ def main():
     query = query_from_yaml(args.query_file)
 
     scopus = ScopusDatabase(query)
-    resources = scopus.request()
-
     database = Sqlite3(args.database)
-    database.store(resources)
+    resources = scopus.request_first()
+    database.store(resources, "scopus")
+
+    # for _ in range(0, 3):
+    #     database.store(scopus.request_next())
 
 
 if __name__ == "__main__":

@@ -24,6 +24,7 @@ class ScopusConnector(Connector):
         ResourceFields.ISBN: "prism:isbn",
         ResourceFields.TITLE: "dc:title",
         ResourceFields.ABSTRACT: "dc:description",
+        ResourceFields.KEYWORDS: "authkeywords",
         "link": "prism:url",
     }
 
@@ -35,7 +36,11 @@ class ScopusConnector(Connector):
         self.query = query
         self.next_link = None
 
-    def next(self) -> list[Entry]:
+    def request_first(self) -> list[Entry]:
+        response = self.__make_api_call(True)
+        return self.__parse_response(response)
+
+    def request_next(self) -> list[Entry]:
         response = self.__make_api_call(False)
         return self.__parse_response(response)
 
@@ -74,10 +79,13 @@ class ScopusConnector(Connector):
             doi = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.DOI], "")
             isbn = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.ISBN], "")
             title = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.TITLE], "")
-            link = entry.get(ScopusConnector.__FIELDS_MAP["link"], "")
             abstract = entry.get(
                 ScopusConnector.__FIELDS_MAP[ResourceFields.ABSTRACT], ""
             )
+            keywords = entry.get(
+                ScopusConnector.__FIELDS_MAP[ResourceFields.KEYWORDS], ""
+            )
+            link = entry.get(ScopusConnector.__FIELDS_MAP["link"], "")
 
             # isbn returns as an 1-element array of an object which has the actual isbn number under the '$' field
             if isbn != "":
@@ -85,7 +93,7 @@ class ScopusConnector(Connector):
 
             to_return.append(
                 Entry(
-                    ResourceData(doi, isbn, title, abstract),
+                    ResourceData(doi, isbn, title, abstract, keywords),
                     self.__transform_link(link),
                 )
             )
@@ -108,7 +116,3 @@ class ScopusConnector(Connector):
             + "&scp="
             + id
         )
-
-    def request(self) -> list[Entry]:
-        response = self.__make_api_call(True)
-        return self.__parse_response(response)
