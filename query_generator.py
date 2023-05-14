@@ -44,20 +44,20 @@ def main():
     #     "myAbstractdddsdfasdfsdaflshdfgkdjsghdklf;jgfdflknvdfjklnvlkdfsjvndl;fsjvndsl;kvndk;fljvbdjkfslvndfjklvnklds",
     #     "myKeywords",
     # )
-    # app = ApplicationGUI()
-    # app.load(resource)
-    # app.launch()
-    # return
 
     args = parser.parse_args()
 
     # initilize global parameter provider
     Provider.initialize(args.parameter)
 
+    app = ApplicationGUI(args.database)
+    app.launch()
+    return
+
     query = query_from_yaml(args.query_file)
 
     # scopus = ScopusDatabase(query)
-    database = Sqlite3(args.database)
+    # database = Sqlite3(args.database)
     # resources = scopus.request_first()
     # database.store(resources, "scopus")
 

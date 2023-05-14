@@ -2,7 +2,7 @@ import sqlite3
 
 from database.local.connector import Connector
 
-from database.entry import Entry, EntrySource
+from database.entry import Entry, EntrySource, EntryState
 from literature.data import ResourceData
 from database.local.columns import Columns
 
@@ -30,7 +30,7 @@ class Sqlite3(Connector):
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()
         ]
-        self.tables.remove("main")
+        self.tables.remove(Sqlite3.__MAIN_TABLE_NAME)
 
     def __entry_factory(cursor, row):
         return (
@@ -47,6 +47,7 @@ class Sqlite3(Connector):
                     EntrySource(cursor.description[x][0], row[x])
                     for x in range(Columns.KEYWORDS + 3, len(cursor.description))
                 ],
+                EntryState(row[Columns.REJECTED], bool(row[Columns.SAVE_FOR_LATER])),
             ),
         )
 
@@ -70,8 +71,8 @@ class Sqlite3(Connector):
                 entry.resource.title,
                 entry.resource.abstract,
                 entry.resource.keywords,
-                None,
-                None,
+                entry.state.rejected,
+                entry.state.save_for_later,
             )
             cursor.execute(
                 "INSERT INTO "
@@ -105,7 +106,7 @@ class Sqlite3(Connector):
             + Sqlite3.__MAIN_TABLE_NAME
             + links_inner_joins
             + " WHERE rejected is NULL"
-        )
+        ).fetchall()
 
     def __update_field(self, id: int, field: str, value: str, save: bool = False):
         cursor = self.connection.cursor()

@@ -7,14 +7,109 @@ class ApplicationGUI:
     def __init__(self, database: str) -> None:
         self.root = tk.Tk()
         self.root.title("Filter Papers")
-        # self.root.geometry("1500x1500")
+        self.root.bind("<Key>", self.__handle_keystroke)
         self.resource_widgets = [None] * (ResourceFields.KEYWORDS.value + 1)
 
         self.resource_frame = self.__resource_frame(self.root)
-        self.resource_frame.pack(fill=tk.BOTH, expand=tk.YES)
+        # self.resource_frame.pack(fill=tk.BOTH, expand=tk.YES)
+        self.resource_frame.pack()
+
+        self.links = tk.Message(self.root)
+        self.links.pack()
+
+        self.rejected = tk.Label(self.root)
+        self.rejected.pack()
+
+        self.later_frame = self.__save_for_later_frame(self.root)
+        self.later_frame.pack()
+
+        self.previous = tk.Button(
+            self.root, text="Previous", command=self.go_to_previous
+        )
+        self.previous.pack()
+
+        self.next = tk.Button(self.root, text="Next", command=self.go_to_next)
+        self.next.pack()
+
+        self.old_state = None
 
         self.database = Sqlite3(database)
-        self.entries = self.database.get_not_reviewed().fetchall()
+        self.entries = self.database.get_not_reviewed()
+
+        if len(self.entries) != 0:
+            self.current_pos = 0
+            self.__load_current()
+        else:
+            self.current_pos = None
+
+    def __check_and_update_state(self):
+        if self.old_state is None:
+            return
+
+        if self.old_state.save_for_later != self.later:
+            # update database
+            self.database.update_save_for_later(
+                self.entries[self.current_pos][0], self.later.get(), True
+            )
+
+            # update cache
+            self.entries[self.current_pos][1].state.save_for_later = self.later.get()
+
+    def go_to_previous(self):
+        self.__check_and_update_state()
+
+        if self.current_pos is None:
+            if len(self.entries) != 0:
+                self.current_pos = 0
+            else:
+                return
+        else:
+            if self.current_pos == 0:
+                self.current_pos = len(self.entries) - 1
+            else:
+                self.current_pos -= 1
+
+        self.__load_current()
+
+    def go_to_next(self):
+        self.__check_and_update_state()
+
+        if self.current_pos is None:
+            if len(self.entries) != 0:
+                self.current_pos = 0
+            else:
+                return
+        else:
+            if self.current_pos == len(self.entries) - 1:
+                self.current_pos = 0
+            else:
+                self.current_pos += 1
+
+        self.__load_current()
+
+    def __handle_keystroke(self, event):
+        if event.keysym == "Right":
+            self.go_to_next()
+        elif event.keysym == "Left":
+            self.go_to_previous()
+        elif event.keysym == "s":
+            self.later.set(True)
+        elif event.keysym == "d":
+            self.later.set(False)
+
+    def __save_for_later_frame(self, parent) -> tk.Frame:
+        frame = tk.Frame(parent)
+        self.later = tk.BooleanVar()
+
+        tk.Radiobutton(
+            frame, text="Save for later", value=True, variable=self.later
+        ).pack()
+
+        tk.Radiobutton(
+            frame, text="Don't save for later", value=False, variable=self.later
+        ).pack()
+
+        return frame
 
     def __resource_frame(self, parent) -> tk.Frame:
         frame = tk.Frame(parent, bg="yellow")
@@ -56,13 +151,29 @@ class ApplicationGUI:
     def launch(self):
         self.root.mainloop()
 
-    def load(self, resource: ResourceData):
-        self.resource_widgets[ResourceFields.DOI.value].config(text=resource.doi)
-        self.resource_widgets[ResourceFields.ISBN.value].config(text=resource.isbn)
-        self.resource_widgets[ResourceFields.TITLE.value].config(text=resource.title)
+    def __load_current(self):
+        data = self.entries[self.current_pos][1]
+        self.resource_widgets[ResourceFields.DOI.value].config(text=data.resource.doi)
+        self.resource_widgets[ResourceFields.ISBN.value].config(text=data.resource.isbn)
+        self.resource_widgets[ResourceFields.TITLE.value].config(
+            text=data.resource.title
+        )
         self.resource_widgets[ResourceFields.ABSTRACT.value].config(
-            text=resource.abstract
+            text=data.resource.abstract
         )
         self.resource_widgets[ResourceFields.KEYWORDS.value].config(
-            text=resource.keywords
+            text=data.resource.keywords
         )
+
+        self.rejected.config(text=data.state.rejected)
+
+        self.later.set(True if data.state.save_for_later is True else False)
+
+        links = ""
+        for source in data.sources:
+            if source.link is not None:
+                links += source.link + "\n"
+
+        self.links.config(text=links)
+
+        self.old_state = data.state
