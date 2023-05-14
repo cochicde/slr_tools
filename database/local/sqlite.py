@@ -105,7 +105,7 @@ class Sqlite3(Connector):
             + " FROM "
             + Sqlite3.__MAIN_TABLE_NAME
             + links_inner_joins
-            + " WHERE rejected is NULL"
+            + " WHERE rejected is 0"
         ).fetchall()
 
     def __update_field(self, id: int, field: str, value: str, save: bool = False):

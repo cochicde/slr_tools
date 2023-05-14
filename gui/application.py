@@ -1,6 +1,18 @@
 import tkinter as tk
 from literature.data import ResourceData, ResourceFields
 from database.local.sqlite import Sqlite3
+from parameters.provider import Provider
+
+
+class Parameters(Provider):
+    NAME = "gui"
+
+    def get_parameters() -> dict:
+        parameters = Provider.get_parameters(Parameters.NAME)
+        if "rejected" not in parameters:
+            raise Exception("Missing rejected configuration for the GUI")
+
+        return parameters
 
 
 class ApplicationGUI:
@@ -17,8 +29,8 @@ class ApplicationGUI:
         self.links = tk.Message(self.root)
         self.links.pack()
 
-        self.rejected = tk.Label(self.root)
-        self.rejected.pack()
+        self.rejected_frame = self.__rejected_frame(self.root)
+        self.rejected_frame.pack()
 
         self.later_frame = self.__save_for_later_frame(self.root)
         self.later_frame.pack()
@@ -46,14 +58,29 @@ class ApplicationGUI:
         if self.old_state is None:
             return
 
-        if self.old_state.save_for_later != self.later:
+        something_changed = False
+        if self.old_state.save_for_later != self.later.get():
             # update database
             self.database.update_save_for_later(
-                self.entries[self.current_pos][0], self.later.get(), True
+                self.entries[self.current_pos][0], self.later.get()
             )
 
             # update cache
             self.entries[self.current_pos][1].state.save_for_later = self.later.get()
+            something_changed = True
+
+        if self.old_state.rejected != self.rejected.get():
+            # update database
+            self.database.update_rejected(
+                self.entries[self.current_pos][0], self.rejected.get()
+            )
+
+            # update cache
+            self.entries[self.current_pos][1].state.rejected = self.later.get()
+            something_changed = True
+
+        if something_changed:
+            self.database.save()
 
     def go_to_previous(self):
         self.__check_and_update_state()
@@ -96,6 +123,26 @@ class ApplicationGUI:
             self.later.set(True)
         elif event.keysym == "d":
             self.later.set(False)
+        else:
+            try:
+                number = int(event.keysym)
+                self.rejected.set(number)
+            except:
+                pass
+
+    def __rejected_frame(self, parent) -> tk.Frame:
+        frame = tk.Frame(parent)
+        self.rejected = tk.IntVar()
+        reasons = Parameters.get_parameters()["rejected"].strip("][").split(", ")
+        for value, reason in enumerate(reasons):
+            tk.Radiobutton(
+                frame,
+                text=reason + " (" + str(value) + ")",
+                value=value,
+                variable=self.rejected,
+            ).pack()
+
+        return frame
 
     def __save_for_later_frame(self, parent) -> tk.Frame:
         frame = tk.Frame(parent)
@@ -165,7 +212,7 @@ class ApplicationGUI:
             text=data.resource.keywords
         )
 
-        self.rejected.config(text=data.state.rejected)
+        self.rejected.set(0 if data.state.rejected is None else data.state.rejected)
 
         self.later.set(True if data.state.save_for_later is True else False)
 

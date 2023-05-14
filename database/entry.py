@@ -2,7 +2,7 @@ from literature.data import ResourceData
 
 
 class EntryState:
-    def __init__(self, rejected: int = None, save_for_later: bool = False) -> None:
+    def __init__(self, rejected: int = 0, save_for_later: bool = False) -> None:
         self.rejected = rejected
         self.save_for_later = save_for_later
 
