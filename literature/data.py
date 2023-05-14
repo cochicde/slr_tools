@@ -2,11 +2,11 @@ from enum import Enum
 
 
 class ResourceFields(Enum):
-    DOI = 1
-    ISBN = 2
-    TITLE = 3
-    ABSTRACT = 4
-    KEYWORDS = 5
+    DOI = 0
+    ISBN = 1
+    TITLE = 2
+    ABSTRACT = 3
+    KEYWORDS = 4
 
 
 class ResourceData:

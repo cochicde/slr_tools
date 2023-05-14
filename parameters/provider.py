@@ -2,6 +2,9 @@ class Provider:
     __ALL_PARAMETERS = {}
 
     def initialize(parameters: list[str]):
+        if parameters is None:
+            return
+
         Provider.__ALL_PARAMETERS = dict(
             (cl.NAME, {}) for cl in Provider.__subclasses__()
         )

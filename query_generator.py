@@ -7,6 +7,8 @@ from query.exporter.acm import ACMQuery
 from database.remote.scopus import ScopusDatabase
 from parameters.provider import Provider
 from database.local.sqlite import Sqlite3
+from gui.application import ApplicationGUI
+from database.local.columns import Columns
 
 
 def main():
@@ -33,6 +35,20 @@ def main():
         default="test.db",
     )
 
+    # from literature.data import ResourceData
+
+    # resource = ResourceData(
+    #     "myDoi",
+    #     "myISBN",
+    #     "myTitle",
+    #     "myAbstractdddsdfasdfsdaflshdfgkdjsghdklf;jgfdflknvdfjklnvlkdfsjvndl;fsjvndsl;kvndk;fljvbdjkfslvndfjklvnklds",
+    #     "myKeywords",
+    # )
+    # app = ApplicationGUI()
+    # app.load(resource)
+    # app.launch()
+    # return
+
     args = parser.parse_args()
 
     # initilize global parameter provider
@@ -40,13 +56,16 @@ def main():
 
     query = query_from_yaml(args.query_file)
 
-    scopus = ScopusDatabase(query)
+    # scopus = ScopusDatabase(query)
     database = Sqlite3(args.database)
-    resources = scopus.request_first()
-    database.store(resources, "scopus")
+    # resources = scopus.request_first()
+    # database.store(resources, "scopus")
 
-    # for _ in range(0, 3):
-    #     database.store(scopus.request_next())
+    entries = database.get_not_reviewed()
+    for entry in entries:
+        (id, Entry) = entry
+
+        print("ID: " + str(id) + " Entry:" + Entry.print())
 
 
 if __name__ == "__main__":

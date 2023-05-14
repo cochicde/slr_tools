@@ -5,5 +5,5 @@ class Connector:
     def __init__(self, database: str) -> None:
         pass
 
-    def store(self, entries: list[Entry]) -> None:
+    def insert(self, entries: list[Entry], remote_database_name: str) -> None:
         pass

@@ -1,6 +1,6 @@
 import requests
 
-from database.entry import Entry
+from database.entry import Entry, EntrySource
 from database.remote.connectors.connector import Connector
 from literature.data import ResourceData, ResourceFields
 from parameters.provider import Provider
@@ -94,7 +94,7 @@ class ScopusConnector(Connector):
             to_return.append(
                 Entry(
                     ResourceData(doi, isbn, title, abstract, keywords),
-                    self.__transform_link(link),
+                    [EntrySource(Parameters.NAME, self.__transform_link(link))],
                 )
             )
         return to_return
