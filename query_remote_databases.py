@@ -1,19 +1,13 @@
 import argparse
 from query.controller.yaml import query_from_yaml
-from query.exporter.serializer import get_query_string
-from query.exporter.scopus import ScopusQuery
-from query.exporter.ieee import IEEEQuery
-from query.exporter.acm import ACMQuery
 from database.remote.scopus import ScopusDatabase
 from parameters.provider import Provider
 from database.local.sqlite import Sqlite3
-from gui.application import ApplicationGUI
-from database.local.columns import Columns
 import yaml
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="Query Generator")
+    parser = argparse.ArgumentParser(prog="Query Remote Databases")
 
     parser.add_argument(
         "-q",
@@ -74,22 +68,15 @@ def main():
     # initilize global parameter provider
     Provider.initialize(args.parameter)
 
-    app = ApplicationGUI(args.database)
-    app.launch()
-    return
-
     query = query_from_yaml(args.query_file)
 
-    # scopus = ScopusDatabase(query)
-    # database = Sqlite3(args.database)
-    # resources = scopus.request_first()
-    # database.store(resources, "scopus")
+    scopus = ScopusDatabase(query)
+    database = Sqlite3(args.database)
+    resources = scopus.request_first()
 
-    entries = database.get_not_reviewed()
-    for entry in entries:
-        (id, Entry) = entry
-
-        print("ID: " + str(id) + " Entry:" + Entry.print())
+    while len(resources) != 0:
+        database.insert(resources)
+        resources = scopus.request_next()
 
 
 if __name__ == "__main__":

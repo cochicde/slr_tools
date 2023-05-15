@@ -61,6 +61,8 @@ class ScopusConnector(Connector):
             )
 
         else:
+            if self.next_link is None:
+                return {}
             response = requests.get(url=self.next_link, headers=headers)
 
         if not response.ok:
@@ -68,13 +70,25 @@ class ScopusConnector(Connector):
 
         return response.json()
 
-    def __parse_response(self, response: str) -> list[Entry]:
+    def __parse_response(self, response: dict) -> list[Entry]:
+        if response == {}:
+            return []
+
+        found_next_link = False
         for link in response["search-results"]["link"]:
             if link["@ref"] == "next":
                 self.next_link = link["@href"]
+                found_next_link = True
                 break
 
+        if not found_next_link:
+            self.next_link = None
+
         to_return = []
+        entries = response["search-results"]["entry"]
+        if len(entries) == 1 and "error" in entries[0]:
+            return to_return
+
         for entry in response["search-results"]["entry"]:
             doi = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.DOI], "")
             isbn = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.ISBN], "")

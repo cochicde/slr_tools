@@ -1,0 +1,10 @@
+config:
+  database: "test.db"
+  query_file: "query.yml"
+  parameter:
+    scopus:
+      token: ""
+      institutional_token: ""
+      partner_id: ""
+
+

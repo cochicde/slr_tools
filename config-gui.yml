@@ -1,11 +1,6 @@
 config:
   database: "test.db"
-  query_file: "query.yaml"
   parameter:
-    scopus:
-      token: ""
-      institutional_token: ""
-      partner_id: ""
     gui:
       rejected:
         - "Unknwon"

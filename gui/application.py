@@ -16,32 +16,41 @@ class Parameters(Provider):
 
 
 class ApplicationGUI:
+    __LINKS_INDEX = ResourceFields.KEYWORDS.value + 1
+
     def __init__(self, database: str) -> None:
         self.root = tk.Tk()
         self.root.title("Filter Papers")
         self.root.bind("<Key>", self.__handle_keystroke)
-        self.resource_widgets = [None] * (ResourceFields.KEYWORDS.value + 1)
+
+        self.resource_widgets = [None] * (ApplicationGUI.__LINKS_INDEX + 1)
 
         self.resource_frame = self.__resource_frame(self.root)
-        # self.resource_frame.pack(fill=tk.BOTH, expand=tk.YES)
-        self.resource_frame.pack()
+        self.resource_frame.grid(row=0, column=0)
 
-        self.links = tk.Message(self.root)
-        self.links.pack()
+        right_frame = tk.Frame(self.root)
 
-        self.rejected_frame = self.__rejected_frame(self.root)
+        self.rejected_frame = self.__rejected_frame(right_frame)
+        # self.rejected_frame.grid(row=1, column=1)
         self.rejected_frame.pack()
 
-        self.later_frame = self.__save_for_later_frame(self.root)
-        self.later_frame.pack()
+        self.later_frame = self.__save_for_later_frame(right_frame)
+        # self.later_frame.grid(row=0, column=1)
+        self.later_frame.pack(pady=10)
+
+        right_frame.grid(column=1, row=0, sticky="n")
+
+        buttons_frame = tk.Frame(right_frame)
 
         self.previous = tk.Button(
-            self.root, text="Previous", command=self.go_to_previous
+            buttons_frame, text="Previous", command=self.go_to_previous
         )
-        self.previous.pack()
+        self.previous.grid(row=0, column=0, sticky="e")
 
-        self.next = tk.Button(self.root, text="Next", command=self.go_to_next)
-        self.next.pack()
+        self.next = tk.Button(buttons_frame, text="Next", command=self.go_to_next)
+        self.next.grid(row=0, column=1, sticky="w")
+
+        buttons_frame.pack()
 
         self.old_state = None
 
@@ -126,7 +135,8 @@ class ApplicationGUI:
         else:
             try:
                 number = int(event.keysym)
-                self.rejected.set(number)
+                if number <= self.max_rejected:
+                    self.rejected.set(number)
             except:
                 pass
 
@@ -134,13 +144,17 @@ class ApplicationGUI:
         frame = tk.Frame(parent)
         self.rejected = tk.IntVar()
         reasons = Parameters.get_parameters()["rejected"].strip("][").split(", ")
+        self.max_rejected = len(reasons) - 1
+
+        row = 0
         for value, reason in enumerate(reasons):
             tk.Radiobutton(
                 frame,
                 text=reason + " (" + str(value) + ")",
                 value=value,
                 variable=self.rejected,
-            ).pack()
+            ).grid(row=row, column=0, sticky="w")
+            row += 1
 
         return frame
 
@@ -149,49 +163,56 @@ class ApplicationGUI:
         self.later = tk.BooleanVar()
 
         tk.Radiobutton(
-            frame, text="Save for later", value=True, variable=self.later
-        ).pack()
+            frame, text="Save for later (s)", value=True, variable=self.later
+        ).grid(row=0, column=0, sticky="w")
 
         tk.Radiobutton(
-            frame, text="Don't save for later", value=False, variable=self.later
-        ).pack()
+            frame, text="Don't save for later (d)", value=False, variable=self.later
+        ).grid(row=1, column=0, sticky="w")
 
         return frame
 
     def __resource_frame(self, parent) -> tk.Frame:
-        frame = tk.Frame(parent, bg="yellow")
+        frame = tk.Frame(parent)
         frame.columnconfigure(0, weight=1)
         frame.columnconfigure(1, weight=2)
 
-        for field in ResourceFields:
-            if field == ResourceFields.ABSTRACT:
-                message = tk.Message(frame, bg="red")
-                message.bind(
-                    "<Configure>", lambda e: message.configure(width=e.width - 10)
-                )
-                self.resource_widgets[field.value] = message
-            else:
-                self.resource_widgets[field.value] = tk.Label(
-                    frame, bg="red", text="---"
-                )
+        wraplength = 1000
 
-        self.resource_widgets[ResourceFields.TITLE.value].grid(
-            row=0, column=0, sticky="w"
-        )
-        self.resource_widgets[ResourceFields.KEYWORDS.value].grid(
-            row=1, column=0, sticky="w"
-        )
-        self.resource_widgets[ResourceFields.DOI.value].grid(
-            row=2, column=0, sticky="w"
-        )
-        self.resource_widgets[ResourceFields.ISBN.value].grid(
-            row=2, column=1, sticky="w"
-        )
-        self.resource_widgets[ResourceFields.ABSTRACT.value].grid(
-            row=3,
-            column=0,
-            sticky="we",
-        )
+        tk.Label(frame, text="Title").grid(row=0, column=0, sticky="e")
+        tk.Label(frame, text="Keywords").grid(row=1, column=0, sticky="e")
+        tk.Label(frame, text="DOI").grid(row=2, column=0, sticky="e")
+        tk.Label(frame, text="ISBN").grid(row=3, column=0, sticky="e")
+        tk.Label(frame, text="Links").grid(row=4, column=0, sticky="e")
+        self.abstract_label = tk.Label(frame, text="Abstract")
+        self.abstract_label.grid(row=5, column=0, sticky="e")
+
+        title = tk.Label(frame, text="---", wraplength=wraplength)
+        title.grid(row=0, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.TITLE.value] = title
+
+        keywords = tk.Label(frame, text="---", wraplength=wraplength)
+        keywords.grid(row=1, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.KEYWORDS.value] = keywords
+
+        doi = tk.Label(frame, text="---")
+        doi.grid(row=2, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.DOI.value] = doi
+
+        isbn = tk.Label(frame, text="---", wraplength=wraplength)
+        isbn.grid(row=3, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.ISBN.value] = isbn
+
+        links = tk.Label(frame, text="---", justify="left", wraplength=wraplength)
+        links.grid(row=4, column=1, sticky="w", rowspan=1)
+
+        self.resource_widgets[ApplicationGUI.__LINKS_INDEX] = [links]
+
+        # Abstract
+        abstract = tk.Label(frame, wraplength=wraplength, justify="left")
+
+        self.resource_widgets[ResourceFields.ABSTRACT.value] = abstract
+        abstract.grid(row=5, column=1, sticky="w")
 
         return frame
 
@@ -205,22 +226,33 @@ class ApplicationGUI:
         self.resource_widgets[ResourceFields.TITLE.value].config(
             text=data.resource.title
         )
-        self.resource_widgets[ResourceFields.ABSTRACT.value].config(
-            text=data.resource.abstract
-        )
+
         self.resource_widgets[ResourceFields.KEYWORDS.value].config(
             text=data.resource.keywords
         )
 
+        for label in self.resource_widgets[ApplicationGUI.__LINKS_INDEX]:
+            label.destroy()
+
+        self.resource_widgets[ApplicationGUI.__LINKS_INDEX] = []
+
+        row = 4
+        for source in data.sources:
+            if source.link is not None:
+                link = tk.Label(self.resource_frame, text=source.link, justify="left")
+                link.grid(row=row, column=1, sticky="w")
+                self.resource_widgets[ApplicationGUI.__LINKS_INDEX].append(link)
+                row += 1
+
+        self.resource_widgets[ResourceFields.ABSTRACT.value].config(
+            text=data.resource.abstract
+        )
+
+        self.resource_widgets[ResourceFields.ABSTRACT.value].grid(row=row)
+        self.abstract_label.grid(row=row)
+
         self.rejected.set(0 if data.state.rejected is None else data.state.rejected)
 
         self.later.set(True if data.state.save_for_later is True else False)
-
-        links = ""
-        for source in data.sources:
-            if source.link is not None:
-                links += source.link + "\n"
-
-        self.links.config(text=links)
 
         self.old_state = data.state
