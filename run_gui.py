@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(prog="Filter Papers GUI Tool")
 
     parser.add_argument(
-        "-c", "--config", help="Configuration yaml file", default="config.yaml"
+        "-c", "--config", help="Configuration yaml file", default="config-gui.yml"
     )
 
     args = parser.parse_args()

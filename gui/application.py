@@ -2,6 +2,7 @@ import tkinter as tk
 from literature.data import ResourceData, ResourceFields
 from database.local.sqlite import Sqlite3
 from parameters.provider import Provider
+import webbrowser
 
 
 class Parameters(Provider):
@@ -26,7 +27,7 @@ class ApplicationGUI:
         self.resource_widgets = [None] * (ApplicationGUI.__LINKS_INDEX + 1)
 
         self.resource_frame = self.__resource_frame(self.root)
-        self.resource_frame.grid(row=0, column=0)
+        self.resource_frame.grid(row=0, column=0, padx=15, pady=15)
 
         right_frame = tk.Frame(self.root)
 
@@ -38,7 +39,7 @@ class ApplicationGUI:
         # self.later_frame.grid(row=0, column=1)
         self.later_frame.pack(pady=10)
 
-        right_frame.grid(column=1, row=0, sticky="n")
+        right_frame.grid(column=1, row=0, sticky="n", padx=15, pady=15)
 
         buttons_frame = tk.Frame(right_frame)
 
@@ -50,7 +51,26 @@ class ApplicationGUI:
         self.next = tk.Button(buttons_frame, text="Next", command=self.go_to_next)
         self.next.grid(row=0, column=1, sticky="w")
 
-        buttons_frame.pack()
+        buttons_frame.pack(pady=15)
+
+        change_font_frame = tk.Frame(right_frame)
+
+        self.change_font_label = tk.Label(
+            change_font_frame, text="Change Abstract Font"
+        )
+
+        self.change_font_label.grid(row=0, column=0, columnspan=2)
+
+        self.decrease = tk.Button(
+            change_font_frame, text="-", command=lambda: self.__change_font(False)
+        )
+        self.decrease.grid(row=1, column=0, sticky="e")
+
+        self.increase = tk.Button(
+            change_font_frame, text="+", command=lambda: self.__change_font(True)
+        )
+        self.increase.grid(row=1, column=1, sticky="w")
+        change_font_frame.pack(pady=15)
 
         self.old_state = None
 
@@ -62,6 +82,20 @@ class ApplicationGUI:
             self.__load_current()
         else:
             self.current_pos = None
+
+    def __change_font(self, increase: bool) -> None:
+        font_type, font_size = (
+            self.resource_widgets[ResourceFields.ABSTRACT.value].cget("font").split(" ")
+        )
+
+        if increase:
+            font_size = int(font_size) + 1
+        else:
+            font_size = int(font_size) - 1
+
+        self.resource_widgets[ResourceFields.ABSTRACT.value].config(
+            font=(font_type, font_size)
+        )
 
     def __check_and_update_state(self):
         if self.old_state is None:
@@ -85,7 +119,7 @@ class ApplicationGUI:
             )
 
             # update cache
-            self.entries[self.current_pos][1].state.rejected = self.later.get()
+            self.entries[self.current_pos][1].state.rejected = self.rejected.get()
             something_changed = True
 
         if something_changed:
@@ -132,6 +166,10 @@ class ApplicationGUI:
             self.later.set(True)
         elif event.keysym == "d":
             self.later.set(False)
+        elif event.keysym == "plus":
+            self.__change_font(True)
+        elif event.keysym == "minus":
+            self.__change_font(False)
         else:
             try:
                 number = int(event.keysym)
@@ -209,8 +247,9 @@ class ApplicationGUI:
         self.resource_widgets[ApplicationGUI.__LINKS_INDEX] = [links]
 
         # Abstract
-        abstract = tk.Label(frame, wraplength=wraplength, justify="left")
-
+        abstract = tk.Label(
+            frame, wraplength=wraplength, justify="left", font=("Arial", 20)
+        )
         self.resource_widgets[ResourceFields.ABSTRACT.value] = abstract
         abstract.grid(row=5, column=1, sticky="w")
 
@@ -218,6 +257,9 @@ class ApplicationGUI:
 
     def launch(self):
         self.root.mainloop()
+
+    def __open_link(self, url):
+        webbrowser.open(url)
 
     def __load_current(self):
         data = self.entries[self.current_pos][1]
@@ -239,8 +281,16 @@ class ApplicationGUI:
         row = 4
         for source in data.sources:
             if source.link is not None:
-                link = tk.Label(self.resource_frame, text=source.link, justify="left")
+                link = tk.Label(
+                    self.resource_frame,
+                    text=source.link,
+                    justify="left",
+                    cursor="hand2",
+                )
                 link.grid(row=row, column=1, sticky="w")
+                link.bind(
+                    "<Button-1>", lambda event, link=source.link: self.__open_link(link)
+                )
                 self.resource_widgets[ApplicationGUI.__LINKS_INDEX].append(link)
                 row += 1
 
