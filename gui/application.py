@@ -188,7 +188,7 @@ class ApplicationGUI:
         for value, reason in enumerate(reasons):
             tk.Radiobutton(
                 frame,
-                text=reason + " (" + str(value) + ")",
+                text=reason[1:-1] + " (" + str(value) + ")",
                 value=value,
                 variable=self.rejected,
             ).grid(row=row, column=0, sticky="w")
