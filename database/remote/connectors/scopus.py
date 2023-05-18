@@ -51,19 +51,30 @@ class ScopusConnector(Connector):
         }
 
         if first:
-            parameters = dict(
-                query=self.query,
-                field=",".join(ScopusConnector.__FIELDS_MAP.values()),
-                view="COMPLETE",
-            )
-            response = requests.get(
-                url=ScopusConnector.__API_URI__, params=parameters, headers=headers
-            )
-
+            return self.__make_first_api_call(headers)
         else:
-            if self.next_link is None:
-                return {}
-            response = requests.get(url=self.next_link, headers=headers)
+            return self.__make_next_api_call(headers)
+
+    def __make_first_api_call(self, headers: dict) -> str:
+        parameters = dict(
+            query=self.query,
+            field=",".join(ScopusConnector.__FIELDS_MAP.values()),
+            view="COMPLETE",
+            cursor="*",
+        )
+        response = requests.get(
+            url=ScopusConnector.__API_URI__, params=parameters, headers=headers
+        )
+
+        if not response.ok:
+            return response.raise_for_status()
+
+        return response.json()
+
+    def __make_next_api_call(self, headers: dict) -> str:
+        if self.next_link is None:
+            return {}
+        response = requests.get(url=self.next_link, headers=headers)
 
         if not response.ok:
             return response.raise_for_status()
@@ -71,24 +82,22 @@ class ScopusConnector(Connector):
         return response.json()
 
     def __parse_response(self, response: dict) -> list[Entry]:
-        if response == {}:
+        if (
+            "search-results" not in response
+            or "entry" not in response["search-results"]
+            or "error" in response["search-results"]["entry"][0]
+        ):
+            self.next_link = None
             return []
 
-        found_next_link = False
+        self.next_link = None
+
         for link in response["search-results"]["link"]:
             if link["@ref"] == "next":
                 self.next_link = link["@href"]
-                found_next_link = True
                 break
 
-        if not found_next_link:
-            self.next_link = None
-
         to_return = []
-        entries = response["search-results"]["entry"]
-        if len(entries) == 1 and "error" in entries[0]:
-            return to_return
-
         for entry in response["search-results"]["entry"]:
             doi = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.DOI], "")
             isbn = entry.get(ScopusConnector.__FIELDS_MAP[ResourceFields.ISBN], "")

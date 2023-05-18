@@ -18,7 +18,7 @@ class Sqlite3(Connector):
         cursor.execute(
             "CREATE TABLE IF NOT EXISTS "
             + Sqlite3.__MAIN_TABLE_NAME
-            + "(id INTEGER PRIMARY KEY, doi TEXT(255), isbn TEXT(25), title TEXT(255), abstract TEXT, keywords TEXT, rejected TINYINT, later BOOL)"
+            + "(id INTEGER PRIMARY KEY, doi TEXT(255), isbn TEXT(25), title TEXT(255), abstract TEXT, keywords TEXT, rejected TINYINT, later BOOL, notes TEXT)"
         )
 
         self.connection.commit()
@@ -45,9 +45,13 @@ class Sqlite3(Connector):
                 ),
                 [
                     EntrySource(cursor.description[x][0], row[x])
-                    for x in range(Columns.KEYWORDS + 3, len(cursor.description))
+                    for x in range(Columns.UNKNOWN, len(cursor.description))
                 ],
-                EntryState(row[Columns.REJECTED], bool(row[Columns.SAVE_FOR_LATER])),
+                EntryState(
+                    row[Columns.REJECTED],
+                    bool(row[Columns.SAVE_FOR_LATER]),
+                    row[Columns.NOTES],
+                ),
             ),
         )
 
@@ -73,11 +77,12 @@ class Sqlite3(Connector):
                 entry.resource.keywords,
                 entry.state.rejected,
                 entry.state.save_for_later,
+                entry.state.notes,
             )
             cursor.execute(
                 "INSERT INTO "
                 + Sqlite3.__MAIN_TABLE_NAME
-                + " ('id', 'doi', 'isbn', 'title', 'abstract', 'keywords', 'rejected', 'later') VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                + " ('id', 'doi', 'isbn', 'title', 'abstract', 'keywords', 'rejected', 'later', 'notes') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 data,
             )
 
@@ -100,7 +105,7 @@ class Sqlite3(Connector):
             links_inner_joins += " LEFT JOIN " + table + " ON main.id=" + table + ".id"
 
         return cursor.execute(
-            "SELECT main.id, main.doi, main.isbn, main.title, main.abstract, main.keywords, main.rejected, main.later"
+            "SELECT main.id, main.doi, main.isbn, main.title, main.abstract, main.keywords, main.rejected, main.later, main.notes"
             + links_columns
             + " FROM "
             + Sqlite3.__MAIN_TABLE_NAME
@@ -130,6 +135,9 @@ class Sqlite3(Connector):
 
     def update_save_for_later(self, id: int, save_for_later: bool, save: bool = False):
         self.__update_field(id, "later", str(save_for_later).upper(), save)
+
+    def update_notes(self, id: int, notes: bool, save: bool = False):
+        self.__update_field(id, "notes", "'" + notes.replace("'", "''") + "'", save)
 
     def save(self):
         self.connection.commit()

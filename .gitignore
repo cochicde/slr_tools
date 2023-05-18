@@ -1,5 +1,4 @@
 *__pycache__*
-test.db
+*.db
 .DS_Store
-my-config-gui.yml
-my-config-db.yml
+my-*.yml

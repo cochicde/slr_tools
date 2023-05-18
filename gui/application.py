@@ -24,53 +24,14 @@ class ApplicationGUI:
         self.root.title("Filter Papers")
         self.root.bind("<Key>", self.__handle_keystroke)
 
-        self.resource_widgets = [None] * (ApplicationGUI.__LINKS_INDEX + 1)
+        padx = 5
+        pady = 5
 
         self.resource_frame = self.__resource_frame(self.root)
-        self.resource_frame.grid(row=0, column=0, padx=15, pady=15)
+        self.resource_frame.grid(row=0, column=0, sticky="n", padx=padx, pady=pady)
 
-        right_frame = tk.Frame(self.root)
-
-        self.rejected_frame = self.__rejected_frame(right_frame)
-        # self.rejected_frame.grid(row=1, column=1)
-        self.rejected_frame.pack()
-
-        self.later_frame = self.__save_for_later_frame(right_frame)
-        # self.later_frame.grid(row=0, column=1)
-        self.later_frame.pack(pady=10)
-
-        right_frame.grid(column=1, row=0, sticky="n", padx=15, pady=15)
-
-        buttons_frame = tk.Frame(right_frame)
-
-        self.previous = tk.Button(
-            buttons_frame, text="Previous", command=self.go_to_previous
-        )
-        self.previous.grid(row=0, column=0, sticky="e")
-
-        self.next = tk.Button(buttons_frame, text="Next", command=self.go_to_next)
-        self.next.grid(row=0, column=1, sticky="w")
-
-        buttons_frame.pack(pady=15)
-
-        change_font_frame = tk.Frame(right_frame)
-
-        self.change_font_label = tk.Label(
-            change_font_frame, text="Change Abstract Font"
-        )
-
-        self.change_font_label.grid(row=0, column=0, columnspan=2)
-
-        self.decrease = tk.Button(
-            change_font_frame, text="-", command=lambda: self.__change_font(False)
-        )
-        self.decrease.grid(row=1, column=0, sticky="e")
-
-        self.increase = tk.Button(
-            change_font_frame, text="+", command=lambda: self.__change_font(True)
-        )
-        self.increase.grid(row=1, column=1, sticky="w")
-        change_font_frame.pack(pady=15)
+        self.right_frame = self.__right_frame(self.root)
+        self.right_frame.grid(column=1, row=0, sticky="n", padx=padx, pady=pady)
 
         self.old_state = None
 
@@ -89,9 +50,18 @@ class ApplicationGUI:
         )
 
         if increase:
+            if (
+                self.right_frame.winfo_rootx()
+                + self.right_frame.winfo_width()
+                + self.right_frame.grid_info()["padx"]
+                >= self.root.winfo_screenwidth()
+            ):
+                return
             font_size = int(font_size) + 1
         else:
             font_size = int(font_size) - 1
+            if font_size <= 0:
+                font_size = 1
 
         self.resource_widgets[ResourceFields.ABSTRACT.value].config(
             font=(font_type, font_size)
@@ -120,6 +90,16 @@ class ApplicationGUI:
 
             # update cache
             self.entries[self.current_pos][1].state.rejected = self.rejected.get()
+            something_changed = True
+
+        # tk adds a newline when inserting into a text for some reason
+        current_notes = self.notes.get(1.0, tk.END)[:-1]
+        if self.old_state.notes != current_notes:
+            # update database
+            self.database.update_notes(self.entries[self.current_pos][0], current_notes)
+
+            # update cache
+            self.entries[self.current_pos][1].state.notes = current_notes
             something_changed = True
 
         if something_changed:
@@ -157,26 +137,101 @@ class ApplicationGUI:
 
         self.__load_current()
 
+    def __handle_tab_in_text(self, event):
+        self.root.focus_set()
+        return "break"
+
     def __handle_keystroke(self, event):
-        if event.keysym == "Right":
-            self.go_to_next()
-        elif event.keysym == "Left":
-            self.go_to_previous()
-        elif event.keysym == "s":
-            self.later.set(True)
-        elif event.keysym == "d":
-            self.later.set(False)
-        elif event.keysym == "plus":
-            self.__change_font(True)
-        elif event.keysym == "minus":
-            self.__change_font(False)
-        else:
-            try:
-                number = int(event.keysym)
-                if number <= self.max_rejected:
-                    self.rejected.set(number)
-            except:
-                pass
+        if event.keysym == "Escape":
+            self.root.focus_set()
+
+        if self.root.focus_get() != self.notes:
+            if event.keysym == "Right":
+                self.go_to_next()
+            elif event.keysym == "Left":
+                self.go_to_previous()
+            elif event.keysym == "s":
+                self.later.set(True)
+            elif event.keysym == "d":
+                self.later.set(False)
+            elif event.keysym == "t":
+                self.notes.focus_set()
+            elif event.keysym == "plus":
+                self.__change_font(True)
+            elif event.keysym == "minus":
+                self.__change_font(False)
+            else:
+                try:
+                    number = int(event.keysym)
+                    if number <= self.max_rejected:
+                        self.rejected.set(number)
+                except:
+                    pass
+
+    def __resource_frame(self, parent) -> tk.Frame:
+        self.resource_widgets = [None] * (ApplicationGUI.__LINKS_INDEX + 1)
+
+        frame = tk.Frame(parent)
+        frame.columnconfigure(0, weight=1)
+        frame.columnconfigure(1, weight=2)
+
+        wraplength = 750
+
+        tk.Label(frame, text="Title").grid(row=0, column=0, sticky="e")
+        tk.Label(frame, text="Keywords").grid(row=1, column=0, sticky="e")
+        tk.Label(frame, text="DOI").grid(row=2, column=0, sticky="e")
+        tk.Label(frame, text="ISBN").grid(row=3, column=0, sticky="e")
+        tk.Label(frame, text="Links").grid(row=4, column=0, sticky="e")
+        self.abstract_label = tk.Label(frame, text="Abstract")
+        self.abstract_label.grid(row=5, column=0, sticky="e")
+
+        title = tk.Label(frame, text="---", wraplength=wraplength)
+        title.grid(row=0, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.TITLE.value] = title
+
+        keywords = tk.Label(frame, text="---", wraplength=wraplength, justify="left")
+        keywords.grid(row=1, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.KEYWORDS.value] = keywords
+
+        doi = tk.Label(frame, text="---")
+        doi.grid(row=2, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.DOI.value] = doi
+
+        isbn = tk.Label(frame, text="---", wraplength=wraplength)
+        isbn.grid(row=3, column=1, sticky="w")
+        self.resource_widgets[ResourceFields.ISBN.value] = isbn
+
+        links = tk.Label(frame, text="---", justify="left", wraplength=wraplength)
+        links.grid(row=4, column=1, sticky="w", rowspan=1)
+
+        self.resource_widgets[ApplicationGUI.__LINKS_INDEX] = [links]
+
+        # Abstract
+        abstract = tk.Text(frame, wrap="word", width=80, height=20, font=("Arial", 18))
+        self.resource_widgets[ResourceFields.ABSTRACT.value] = abstract
+        abstract.grid(row=5, column=1, sticky="w")
+
+        return frame
+
+    def __right_frame(self, parent) -> tk.Frame:
+        frame = tk.Frame(parent)
+
+        rejected_frame = self.__rejected_frame(frame)
+        rejected_frame.pack(fill=tk.BOTH)
+
+        later_frame = self.__save_for_later_frame(frame)
+        later_frame.pack(fill=tk.BOTH, pady=10)
+
+        change_font_frame = self.__change_font_name(frame)
+        change_font_frame.pack(pady=15)
+
+        notes_frame = self.__notes_frame(frame)
+        notes_frame.pack(pady=15, fill=tk.BOTH)
+
+        buttons_frame = self.__next_previous_frame(frame)
+        buttons_frame.pack(pady=15)
+
+        return frame
 
     def __rejected_frame(self, parent) -> tk.Frame:
         frame = tk.Frame(parent)
@@ -210,48 +265,55 @@ class ApplicationGUI:
 
         return frame
 
-    def __resource_frame(self, parent) -> tk.Frame:
+    def __change_font_name(self, parent) -> tk.Frame:
         frame = tk.Frame(parent)
-        frame.columnconfigure(0, weight=1)
-        frame.columnconfigure(1, weight=2)
 
-        wraplength = 1000
+        self.change_font_label = tk.Label(frame, text="Change Abstract Font")
 
-        tk.Label(frame, text="Title").grid(row=0, column=0, sticky="e")
-        tk.Label(frame, text="Keywords").grid(row=1, column=0, sticky="e")
-        tk.Label(frame, text="DOI").grid(row=2, column=0, sticky="e")
-        tk.Label(frame, text="ISBN").grid(row=3, column=0, sticky="e")
-        tk.Label(frame, text="Links").grid(row=4, column=0, sticky="e")
-        self.abstract_label = tk.Label(frame, text="Abstract")
-        self.abstract_label.grid(row=5, column=0, sticky="e")
+        self.change_font_label.grid(row=0, column=0, columnspan=2)
 
-        title = tk.Label(frame, text="---", wraplength=wraplength)
-        title.grid(row=0, column=1, sticky="w")
-        self.resource_widgets[ResourceFields.TITLE.value] = title
-
-        keywords = tk.Label(frame, text="---", wraplength=wraplength)
-        keywords.grid(row=1, column=1, sticky="w")
-        self.resource_widgets[ResourceFields.KEYWORDS.value] = keywords
-
-        doi = tk.Label(frame, text="---")
-        doi.grid(row=2, column=1, sticky="w")
-        self.resource_widgets[ResourceFields.DOI.value] = doi
-
-        isbn = tk.Label(frame, text="---", wraplength=wraplength)
-        isbn.grid(row=3, column=1, sticky="w")
-        self.resource_widgets[ResourceFields.ISBN.value] = isbn
-
-        links = tk.Label(frame, text="---", justify="left", wraplength=wraplength)
-        links.grid(row=4, column=1, sticky="w", rowspan=1)
-
-        self.resource_widgets[ApplicationGUI.__LINKS_INDEX] = [links]
-
-        # Abstract
-        abstract = tk.Label(
-            frame, wraplength=wraplength, justify="left", font=("Arial", 20)
+        self.decrease = tk.Button(
+            frame, text="-", command=lambda: self.__change_font(False)
         )
-        self.resource_widgets[ResourceFields.ABSTRACT.value] = abstract
-        abstract.grid(row=5, column=1, sticky="w")
+        self.decrease.grid(row=1, column=0, sticky="e")
+
+        self.increase = tk.Button(
+            frame, text="+", command=lambda: self.__change_font(True)
+        )
+        self.increase.grid(row=1, column=1, sticky="w")
+
+        return frame
+
+    def __notes_frame(self, parent) -> tk.Frame:
+        frame = tk.Frame(parent)
+
+        notes_label = tk.Label(frame, text="Notes (t)")
+        notes_label.pack(fill=tk.BOTH)
+
+        self.notes = tk.Text(
+            frame,
+            wrap="word",
+            width=10,
+            font=("Arial", 15),
+            height=10,
+            highlightbackground="gray",
+            highlightthickness=1,
+        )
+        self.notes.bind("<Tab>", self.__handle_tab_in_text)
+        self.notes.pack(fill=tk.BOTH)
+
+        return frame
+
+    def __next_previous_frame(self, parent) -> tk.Frame:
+        frame = tk.Frame(parent)
+
+        self.previous = tk.Button(frame, text="Previous", command=self.go_to_previous)
+        self.previous.grid(row=0, column=0, sticky="e")
+
+        self.next = tk.Button(frame, text="Next", command=self.go_to_next)
+        self.next.grid(row=0, column=1, sticky="w")
+
+        frame.pack(pady=15)
 
         return frame
 
@@ -294,9 +356,11 @@ class ApplicationGUI:
                 self.resource_widgets[ApplicationGUI.__LINKS_INDEX].append(link)
                 row += 1
 
-        self.resource_widgets[ResourceFields.ABSTRACT.value].config(
-            text=data.resource.abstract
-        )
+        abstract = self.resource_widgets[ResourceFields.ABSTRACT.value]
+        self.resource_widgets[ResourceFields.ABSTRACT.value].config(state="normal")
+        abstract.delete(1.0, tk.END)
+        abstract.insert(tk.END, data.resource.abstract)
+        self.resource_widgets[ResourceFields.ABSTRACT.value].config(state="disabled")
 
         self.resource_widgets[ResourceFields.ABSTRACT.value].grid(row=row)
         self.abstract_label.grid(row=row)
@@ -304,5 +368,8 @@ class ApplicationGUI:
         self.rejected.set(0 if data.state.rejected is None else data.state.rejected)
 
         self.later.set(True if data.state.save_for_later is True else False)
+
+        self.notes.delete(1.0, tk.END)
+        self.notes.insert(tk.END, data.state.notes)
 
         self.old_state = data.state

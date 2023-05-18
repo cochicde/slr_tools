@@ -10,3 +10,5 @@ class Columns:
     KEYWORDS = 5
     REJECTED = 6
     SAVE_FOR_LATER = 7
+    NOTES = 8
+    UNKNOWN = 9
