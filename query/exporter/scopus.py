@@ -6,10 +6,9 @@ class ScopusQuery(DatabaseQuery):
     __OPERATOR_MAP = {Operator.AND: "AND", Operator.OR: "OR"}
     __FIELDS_MAP = {
         Field.TITLE: "TITLE",
-        Field.ABSTRACT: "ABSTRACT",
-        Field.KEYWORDS: "KEYWORDS",
+        Field.ABSTRACT: "ABS",
+        Field.KEYWORDS: "AUTHKEY",
         Field.ALL: "ALL",
-        "TITLE-ABS-KEY": "TITLE-ABS-KEY",
     }
 
     def get_operator_string(operator: Operator):
@@ -18,27 +17,14 @@ class ScopusQuery(DatabaseQuery):
     def get_single_query_string(query: SingleQuery):
         to_return = ""
 
-        fields = query.fields.copy()
-
-        if (
-            Field.TITLE in fields
-            and Field.ABSTRACT in fields
-            and Field.KEYWORDS in fields
-            and query.operator is Operator.OR
-        ):
-            fields.remove(Field.TITLE)
-            fields.remove(Field.ABSTRACT)
-            fields.remove(Field.KEYWORDS)
-            fields.append("TITLE-ABS-KEY")
-
-        only_one_field = len(fields) == 1
+        only_one_field = len(query.fields) == 1
 
         if not only_one_field:
             to_return += "("
 
         only_one_term = len(query.terms) == 1
 
-        for index, field in enumerate(fields):
+        for index, field in enumerate(query.fields):
             if index != 0:
                 to_return += " "
 
@@ -57,8 +43,8 @@ class ScopusQuery(DatabaseQuery):
 
             to_return += ")"
 
-            if not only_one_field and index != len(fields) - 1:
-                to_return += ScopusQuery.get_operator_string(query.operator)
+            if not only_one_field and index != len(query.fields) - 1:
+                to_return += " " + ScopusQuery.get_operator_string(query.operator)
 
         if not only_one_field:
             to_return += ")"

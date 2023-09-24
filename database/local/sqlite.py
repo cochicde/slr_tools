@@ -141,3 +141,26 @@ class Sqlite3(Connector):
 
     def save(self):
         self.connection.commit()
+
+    def show_sorted_rejected(self):
+        cursor = self.connection.cursor()
+        sorted_items = {}
+        for _, reason in cursor.execute(
+            "SELECT main.id,  main.rejected from main"
+        ).fetchall():
+            if reason not in sorted_items:
+                sorted_items[reason] = 0
+            else:
+                sorted_items[reason] += 1
+
+        result = {}
+        for index, reason in enumerate(
+            sorted(sorted_items.items(), reverse=True, key=lambda k: k[1])
+        ):
+            result[reason[0]] = index
+
+        print(result)
+
+        # iterate over all entries and add the total number of values to each one to have it outside of the range
+        # if we have 0 to 7, add 8 to each one, so 0 becomes 8, 1 becomes 9 and so on.
+        # Then for each number, substract the max number, check the result dictionary to what it should be changed and apply that
