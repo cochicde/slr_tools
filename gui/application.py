@@ -87,6 +87,7 @@ class ApplicationGUI:
             + "x"
             + str(self.root.winfo_screenheight())
         )
+        self.root.tk_setPalette(background="white")
 
         padx = 5
         pady = 5
