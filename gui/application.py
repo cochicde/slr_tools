@@ -319,7 +319,7 @@ class ApplicationGUI:
             wrap="word",
             width=80,
             height=20,
-            font=("Arial", 24),
+            font=("Arial", 19),
         )
         self.resource_widgets[ResourceFields.ABSTRACT.value] = abstract
 
