@@ -235,6 +235,8 @@ class ApplicationGUI:
                 self.later.set(False)
             elif event.keysym == "t":
                 self.notes.focus_set()
+            elif event.keysym == "q":
+                self.__open_link( self.resource_widgets[ApplicationGUI.__LINKS_INDEX][0].cget("text"))
             elif event.keysym == "plus":
                 self.__change_font(True)
             elif event.keysym == "minus":
@@ -275,6 +277,10 @@ class ApplicationGUI:
         tk.Label(frame, text="DOI").grid(row=2, column=0, sticky="e")
         tk.Label(frame, text="ISBN").grid(row=3, column=0, sticky="e")
         tk.Label(frame, text="Links").grid(row=4, column=0, sticky="e")
+
+        self.search_label = tk.Label(frame, text="Search")
+        self.search_label.grid(row=5, column=0, sticky="e")
+        
         self.abstract_label = tk.Label(frame, text="Abstract")
         self.abstract_label.grid(row=6, column=0, sticky="en")
 
@@ -310,7 +316,7 @@ class ApplicationGUI:
         self.search_bar.grid(row=5, column=1, sticky="w")
         self.search_bar.insert(
             tk.END,
-            "[pP][lL][cC]|[pP]rogram|[lL]ogic|[cC]ontrol|[sS]oftware|[dD]ebug",
+            Parameters.get_parameters().get("search", "")
         )
 
         # Abstract
@@ -488,9 +494,11 @@ class ApplicationGUI:
                 self.resource_widgets[ApplicationGUI.__LINKS_INDEX].append(link)
                 row += 1
 
-        row += 1  # skip search bar
+        self.search_label.grid(row=row)
+        self.search_bar.grid(row=row)
+        
+        row += 1  
 
-        abstract = self.resource_widgets[ResourceFields.ABSTRACT.value]
         self.resource_widgets[ResourceFields.ABSTRACT.value].config(state="normal")
         self.__update_widget_text(
             self.resource_widgets[ResourceFields.ABSTRACT.value], data.resource.abstract

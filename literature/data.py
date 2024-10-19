@@ -16,3 +16,11 @@ class ResourceData:
         self.title = title
         self.abstract = abstract
         self.keywords = keywords
+    
+    def __str__(self) -> str:
+        return ("Doi: " + self.doi + 
+                "\nisbn: " + self.isbn +
+                "\ntitle: " + self.title +
+                "\nabstract: " + self.abstract +
+                "\nkeywords: " + self.keywords
+                )

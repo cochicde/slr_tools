@@ -33,6 +33,11 @@ class Sqlite3(Connector):
         self.tables.remove(Sqlite3.__MAIN_TABLE_NAME)
 
     def __entry_factory(cursor, row):
+        sources = []
+        for x in range(Columns.UNKNOWN, len(cursor.description)):
+            if row[x] is not None:
+                sources.append(EntrySource(cursor.description[x][0], row[x]))
+
         return (
             row[Columns.ID],
             Entry(
@@ -43,10 +48,7 @@ class Sqlite3(Connector):
                     row[Columns.ABSTRACT],
                     row[Columns.KEYWORDS],
                 ),
-                [
-                    EntrySource(cursor.description[x][0], row[x])
-                    for x in range(Columns.UNKNOWN, len(cursor.description))
-                ],
+                sources,
                 EntryState(
                     row[Columns.REJECTED],
                     bool(row[Columns.SAVE_FOR_LATER]),
@@ -57,6 +59,7 @@ class Sqlite3(Connector):
 
     def insert(self, entries: list[Entry]) -> None:
         cursor = self.connection.cursor()
+        new_entries = 0
         for entry in entries:
             # add source tables if does not exist
             for source in entry.sources:
@@ -79,20 +82,54 @@ class Sqlite3(Connector):
                 entry.state.save_for_later,
                 entry.state.notes,
             )
-            cursor.execute(
-                "INSERT INTO "
-                + Sqlite3.__MAIN_TABLE_NAME
-                + " ('id', 'doi', 'isbn', 'title', 'abstract', 'keywords', 'rejected', 'later', 'notes') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                data,
-            )
 
+            existing_row = self.get_existing_row(entry, cursor) 
+            if existing_row is None:
+                cursor.execute(
+                    "INSERT INTO "
+                    + Sqlite3.__MAIN_TABLE_NAME
+                    + " ('id', 'doi', 'isbn', 'title', 'abstract', 'keywords', 'rejected', 'later', 'notes') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    data,
+                )
+                new_entries = new_entries + 1
+
+            id_to_insert = existing_row[0] if existing_row is not None else cursor.lastrowid
             for source in entry.sources:
                 cursor.execute(
                     "INSERT INTO " + source.origin + " VALUES (?, ?)",
-                    (cursor.lastrowid, source.link),
+                    (id_to_insert, source.link),
                 )
 
         self.connection.commit()
+
+        print(entries[0].sources[0].origin + " -> " + str(new_entries))
+
+    def get_existing_row(self, entry: Entry, cursor: sqlite3.Cursor) -> object | None:
+        cursor.row_factory = Sqlite3.__entry_factory
+
+        fields_to_check = []
+        if entry.resource.doi != '':
+            fields_to_check.append(' doi = "' + entry.resource.doi.replace('"', '""')  + '"')
+        # if entry.resource.isbn != '':
+        #     fields_to_check.append(' isbn = "' + entry.resource.isbn.replace('"', '""')  + '"')
+        if entry.resource.title != '':
+            fields_to_check.append(' title = "' + entry.resource.title.replace('"', '""')  + '"')
+        if entry.resource.abstract != '':
+            fields_to_check.append(' abstract = "' + entry.resource.abstract.replace('"', '""')  + '"')
+        # if entry.resource.keywords != '':
+        #     fields_to_check.append(' keywords = "' + entry.resource.keywords.replace('"', '""')  + '"')
+
+        command = (  'SELECT * ' +
+                    ' FROM ' + Sqlite3.__MAIN_TABLE_NAME +
+                    ' WHERE' +
+                    " OR ".join(fields_to_check) +
+                    ' COLLATE NOCASE')
+        existing_entries = cursor.execute(command).fetchall()
+        if len(existing_entries) != 0:
+            # return first row found
+            return existing_entries[0]
+        
+        return None
 
     def get_not_reviewed(self) -> list[(int, Entry)]:
         cursor = self.connection.cursor()

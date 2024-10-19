@@ -15,6 +15,9 @@ class EntrySource:
         self.origin = origin
         self.link = link
 
+    def __str__(self) -> str:
+        return (self.origin + " -> " + self.link if self.link is not None else "empty")
+
 
 class Entry:
     def __init__(
@@ -26,3 +29,8 @@ class Entry:
         self.resource = resource
         self.sources = sources
         self.state = state
+
+    def __str__(self) -> str:
+        return (str(self.resource) + 
+                "\nlinks: " + "\n".join(str(link) for link in self.sources)
+                )

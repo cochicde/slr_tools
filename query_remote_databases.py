@@ -1,8 +1,12 @@
 import argparse
 from query.controller.yaml import query_from_yaml
 from database.remote.scopus import ScopusDatabase
+from database.remote.ieee import IEEEDatabase
 from parameters.provider import Provider
 from database.local.sqlite import Sqlite3
+from database.file import ieee_csv
+from database.file import bibtex
+
 import yaml
 
 
@@ -68,15 +72,31 @@ def main():
     # initilize global parameter provider
     Provider.initialize(args.parameter)
 
-    query = query_from_yaml(args.query_file)
+    # query = query_from_yaml(args.query_file)
 
-    scopus = ScopusDatabase(query)
+    # remote_database = IEEEDatabase(query)
     database = Sqlite3(args.database)
-    resources = scopus.request_first()
+    # resources = remote_database.request_first()
 
-    while len(resources) != 0:
-        database.insert(resources)
-        resources = scopus.request_next()
+    resources = ieee_csv.get_entries("ieeeSorted.csv")
+    database.insert(resources)
+
+    resources = bibtex.get_entries("acmSorted.bib")
+    database.insert(resources)
+
+
+    # for resource in resources:
+    #     print(str(resource))
+    #     print("")
+
+    # resources = remote_database.request_next()
+    # for resource in resources:
+    #     print(str(resource))
+        # print("")
+
+    # while len(resources) != 0:
+    #     database.insert(resources)
+    #     resources = scopus.request_next()
 
 
 if __name__ == "__main__":
