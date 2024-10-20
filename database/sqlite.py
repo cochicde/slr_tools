@@ -1,16 +1,23 @@
 import sqlite3
 
-from database.local.connector import Connector
-
+from database.columns import Columns
+from database.connector import Connector
 from database.entry import Entry, EntrySource, EntryState
-from literature.data import ResourceData
-from database.local.columns import Columns
-
+from model.resource import ResourceData
 
 class Sqlite3(Connector):
+    """ Conector to a Sqlite3 database. The connector creates a "main" table with all the information about an entry
+    except the sources. The sources are stored in their own table with the ID as link to the main table.
+    """
+
     __MAIN_TABLE_NAME = "main"
 
     def __init__(self, database: str) -> None:
+        """ Constructor. Connects to the database and creates the main table if not present
+
+        Args:
+            database (str):Path to the database
+        """
         self.connection = sqlite3.connect(database)
         cursor = self.connection.cursor()
 
@@ -32,11 +39,23 @@ class Sqlite3(Connector):
         ]
         self.tables.remove(Sqlite3.__MAIN_TABLE_NAME)
 
-    def __entry_factory(cursor, row):
+    def __entry_factory(cursor: sqlite3.Cursor, row: tuple[any,...]) -> tuple[int, Entry]:
+        """ Row factory for sqlite3. When fetching from the database, this function transform the default return from the database (tuple of colums)
+        into a custom made row. 
+
+        Args:
+            cursor (sqlite3.Cursor): Cursor executing the command
+            row (tuple[any,...]): Row being fetched
+
+        Returns:
+            tuple[int, Entry]: ID and Entry object created from the fetch row
+        """
+        
         sources = []
-        for x in range(Columns.UNKNOWN, len(cursor.description)):
-            if row[x] is not None:
-                sources.append(EntrySource(cursor.description[x][0], row[x]))
+        # sources, if present in the fetch command, should be located after the rest of the information
+        for column in range(Columns.UNKNOWN, len(cursor.description)):
+            if row[column] is not None:
+                sources.append(EntrySource(cursor.description[column][0], row[column]))
 
         return (
             row[Columns.ID],
@@ -58,10 +77,15 @@ class Sqlite3(Connector):
         )
 
     def insert(self, entries: list[Entry]) -> None:
+        """ Insert entries into the database
+
+        Args:
+            entries (list[Entry]): Entries to insert into the database
+        """
         cursor = self.connection.cursor()
         new_entries = 0
         for entry in entries:
-            # add source tables if does not exist
+            # add source tables if they do not exist
             for source in entry.sources:
                 if source.origin not in self.tables:
                     cursor.execute(
@@ -83,6 +107,7 @@ class Sqlite3(Connector):
                 entry.state.notes,
             )
 
+            # insert into the main table only if not present already
             existing_row = self.get_existing_row(entry, cursor) 
             if existing_row is None:
                 cursor.execute(
@@ -93,6 +118,7 @@ class Sqlite3(Connector):
                 )
                 new_entries = new_entries + 1
 
+            # insert the information into the source table
             id_to_insert = existing_row[0] if existing_row is not None else cursor.lastrowid
             for source in entry.sources:
                 cursor.execute(
@@ -104,20 +130,27 @@ class Sqlite3(Connector):
 
         print(entries[0].sources[0].origin + " -> " + str(new_entries))
 
-    def get_existing_row(self, entry: Entry, cursor: sqlite3.Cursor) -> object | None:
+    def get_existing_row(self, entry: Entry, cursor: sqlite3.Cursor) -> tuple[int, Entry] | None:
+        """ Get a row based on an Entry if it exist. A row is considered to exists if it has one of the following values equal to another in the database:
+          doi, title, abstract. ISBN is not used since sometime scientific resources are in the same book having the same ISBN.
+        If many items exists in the database that are equal, the first one is returned. 
+
+        Args:
+            entry (Entry): Entry to look for in the database
+            cursor (sqlite3.Cursor): Cursor of the database
+
+        Returns:
+            tuple[int, Entry] | None: The ID and entry if the Entry was already present, None otherwise.
+        """
         cursor.row_factory = Sqlite3.__entry_factory
 
         fields_to_check = []
         if entry.resource.doi != '':
             fields_to_check.append(' doi = "' + entry.resource.doi.replace('"', '""')  + '"')
-        # if entry.resource.isbn != '':
-        #     fields_to_check.append(' isbn = "' + entry.resource.isbn.replace('"', '""')  + '"')
         if entry.resource.title != '':
             fields_to_check.append(' title = "' + entry.resource.title.replace('"', '""')  + '"')
         if entry.resource.abstract != '':
             fields_to_check.append(' abstract = "' + entry.resource.abstract.replace('"', '""')  + '"')
-        # if entry.resource.keywords != '':
-        #     fields_to_check.append(' keywords = "' + entry.resource.keywords.replace('"', '""')  + '"')
 
         command = (  'SELECT * ' +
                     ' FROM ' + Sqlite3.__MAIN_TABLE_NAME +
@@ -131,7 +164,12 @@ class Sqlite3(Connector):
         
         return None
 
-    def get_not_reviewed(self) -> list[(int, Entry)]:
+    def get_not_reviewed(self) -> list[tuple[int, Entry]]:
+        """ Get all entries that are not reviewed yet (rejected = 0)
+    
+        Returns:
+          list[tuple[int, Entry]]: List of ID and entries which are not reviwied yet
+        """
         cursor = self.connection.cursor()
         cursor.row_factory = Sqlite3.__entry_factory
 
@@ -147,7 +185,7 @@ class Sqlite3(Connector):
             + " FROM "
             + Sqlite3.__MAIN_TABLE_NAME
             + links_inner_joins
-            + " WHERE rejected is 4"
+            + " WHERE rejected is 0"
         ).fetchall()
 
     def __update_field(self, id: int, field: str, value: str, save: bool = False):
@@ -168,36 +206,39 @@ class Sqlite3(Connector):
             self.connection.commit()
 
     def update_rejected(self, id: int, reason: int, save: bool = False):
+        """ Update the rejected field of an entry
+
+        Args:
+            id (int): ID of the entry to update
+            reason (int): reason for rejection
+            save (bool, optional): Save into the database now or no. Defaults to False. Since writing to the database
+            can be slow, the information can be save in memory and only later saved
+        """
         self.__update_field(id, "rejected", str(reason), save)
 
     def update_save_for_later(self, id: int, save_for_later: bool, save: bool = False):
+        """ Update the save for later field
+
+        Args:
+            id (int): ID of the entry to update
+            save_for_later (bool): new value for the field of the entry
+            save (bool, optional): Save into the database now or no. Defaults to False. Since writing to the database
+            can be slow, the information can be save in memory and only later saved
+        """
         self.__update_field(id, "later", str(save_for_later).upper(), save)
 
     def update_notes(self, id: int, notes: bool, save: bool = False):
+        """ Update the note field
+
+        Args:
+            id (int): ID of the entry to update
+            notes (bool): new description for the notes field of the entry
+            save (bool, optional): Save into the database now or no. Defaults to False. Since writing to the database
+            can be slow, the information can be save in memory and only later saved
+        """
         self.__update_field(id, "notes", "'" + notes.replace("'", "''") + "'", save)
 
     def save(self):
+        """ Save current state of the database into its file
+        """
         self.connection.commit()
-
-    def show_sorted_rejected(self):
-        cursor = self.connection.cursor()
-        sorted_items = {}
-        for _, reason in cursor.execute(
-            "SELECT main.id,  main.rejected from main"
-        ).fetchall():
-            if reason not in sorted_items:
-                sorted_items[reason] = 0
-            else:
-                sorted_items[reason] += 1
-
-        result = {}
-        for index, reason in enumerate(
-            sorted(sorted_items.items(), reverse=True, key=lambda k: k[1])
-        ):
-            result[reason[0]] = index
-
-        print(result)
-
-        # iterate over all entries and add the total number of values to each one to have it outside of the range
-        # if we have 0 to 7, add 8 to each one, so 0 becomes 8, 1 becomes 9 and so on.
-        # Then for each number, substract the max number, check the result dictionary to what it should be changed and apply that

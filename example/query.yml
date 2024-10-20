@@ -1,0 +1,35 @@
+operator: AND
+queries:
+  - operator: OR
+    queries:
+      - fields:
+        - title
+        - abstract
+        - keywords
+        terms:
+        - Programmable Logic Controller
+      - operator: AND
+        queries:
+          - fields:
+            - title
+            - abstract
+            - keywords
+            terms:
+            - PLC
+          - operator: AND
+            negated: true 
+            fields:
+            - title
+            - abstract
+            - keywords
+            terms:
+            - Power Line Communications
+  - operator: OR
+    fields:
+    - title
+    - abstract
+    - keywords
+    terms:
+    - software
+    - program
+    - debug

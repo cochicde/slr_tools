@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class Columns:
+    """ Available columns in the database
+    """
     ID = 0
     DOI = 1
     ISBN = 2

@@ -1,8 +1,10 @@
 from query.model.query import Field, Operator, SingleQuery
-from query.exporter.serializer import DatabaseQuery
+from query.exporter.serializer import QueyGenerator
 
 
-class ScopusQuery(DatabaseQuery):
+class ScopusQuery(QueyGenerator):
+    """ Specific query generator for Scopus
+    """
     __OPERATOR_MAP = {Operator.AND: "AND", Operator.OR: "OR"}
     __FIELDS_MAP = {
         Field.TITLE: "TITLE",
@@ -12,9 +14,25 @@ class ScopusQuery(DatabaseQuery):
     }
 
     def get_operator_string(operator: Operator):
+        """ Get the string represenation of an operator for scopus
+
+        Args:
+            operator (Operator): required operator
+
+        Returns:
+            str: String representation of the operator
+        """
         return ScopusQuery.__OPERATOR_MAP.get(operator)
 
     def get_single_query_string(query: SingleQuery):
+        """ Get the string representation of a SingleQuery for scopus
+
+        Args:
+            query (SingleQuery): single query to get the representation from
+
+        Returns:
+            str: string representation of the single query
+        """
         to_return = ""
 
         only_one_field = len(query.fields) == 1

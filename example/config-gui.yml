@@ -1,0 +1,10 @@
+config:
+  database: "./example/test.db"
+  rejected:
+    - "Unknwon"
+    - "Not rejected"
+    - "Some other reason"
+    - "Third reason"
+  search: "PLC"
+
+

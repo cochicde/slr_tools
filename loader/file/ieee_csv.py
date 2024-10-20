@@ -2,9 +2,11 @@ from enum import IntEnum
 import csv
 
 from database.entry import Entry, EntrySource
-from literature.data import ResourceData
+from model.resource import ResourceData
 
 class Headers(IntEnum):
+    """ Available columns/headers in the IEEE csv file
+    """
     DOCUMENT_TITLE = 0
     AUTHORS = 1
     AUTHOR_AFFILIATIONS = 2
@@ -34,7 +36,15 @@ class Headers(IntEnum):
     PUBLISHER = 26
     DOCUMENT_IDENTIFIER = 27
 
-def get_entries(source_file: str):
+def get_entries(source_file: str) -> list[Entry]:
+    """ Gets a list of entry objects from a ieee csv file
+
+    Args:
+        source_file (str): Path to the ieee csv file
+
+    Returns:
+        list[Entry]: List of entries
+    """
     result = []
     with open(source_file) as file:
         csv_input = csv.reader(file, delimiter=',', quoting=csv.QUOTE_ALL)

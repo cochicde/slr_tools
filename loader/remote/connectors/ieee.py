@@ -1,16 +1,16 @@
 import requests
 
 from database.entry import Entry, EntrySource
-from database.remote.connectors.connector import Connector
-from literature.data import ResourceData, ResourceFields
-from parameters.provider import Provider
+from loader.remote.connectors.connector import Connector
+from model.resource import ResourceData, ResourceFields
+from loader.remote.parameters import Parameters
 
 
-class Parameters(Provider):
+class Parameters(Parameters):
     NAME = "ieee"
 
     def get_parameters() -> dict:
-        parameters = Provider.get_parameters(Parameters.NAME)
+        parameters = Parameters.get_parameters(Parameters.NAME)
         if "token" not in parameters:
             raise Exception("Missing token to connect to the IEEE API")
 

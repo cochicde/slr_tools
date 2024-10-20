@@ -1,6 +1,6 @@
 config:
-  database: "test.db"
-  query_file: "query.yml"
+  database: "./example/test.db"
+  query_file: "./example/query.yml"
   parameter:
     scopus:
       token: ""

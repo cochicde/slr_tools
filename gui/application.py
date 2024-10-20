@@ -1,22 +1,11 @@
 import tkinter as tk
-from literature.data import ResourceData, ResourceFields
-from database.local.sqlite import Sqlite3
-from parameters.provider import Provider
+from model.resource import ResourceData, ResourceFields
+from database.sqlite import Sqlite3
 import webbrowser
 import re
 
-
-class Parameters(Provider):
-    NAME = "gui"
-
-    def get_parameters() -> dict:
-        parameters = Provider.get_parameters(Parameters.NAME)
-        if "rejected" not in parameters:
-            raise Exception("Missing rejected configuration for the GUI")
-
-        return parameters
-
-
+# The following class was copied from https://stackoverflow.com/a/72232336
+# created by user https://stackoverflow.com/users/14507110/billy
 class CustomText(tk.Text):
     """
     Wrapper for the tkinter.Text widget with additional methods for
@@ -78,7 +67,9 @@ class CustomText(tk.Text):
 class ApplicationGUI:
     __LINKS_INDEX = ResourceFields.KEYWORDS.value + 1
 
-    def __init__(self, database: str) -> None:
+    def __init__(self, args: dict) -> None:
+        self.search = args.get("search", "")
+        self.reasons = args["rejected"]
         self.root = tk.Tk()
         self.root.title("Filter Papers")
         self.root.bind("<Key>", self.__handle_keystroke)
@@ -103,7 +94,7 @@ class ApplicationGUI:
 
         self.old_state = None
 
-        self.database = Sqlite3(database)
+        self.database = Sqlite3(args["database"])
         self.entries = self.database.get_not_reviewed()
 
         if len(self.entries) != 0:
@@ -316,7 +307,7 @@ class ApplicationGUI:
         self.search_bar.grid(row=5, column=1, sticky="w")
         self.search_bar.insert(
             tk.END,
-            Parameters.get_parameters().get("search", "")
+            self.search
         )
 
         # Abstract
@@ -359,14 +350,14 @@ class ApplicationGUI:
     def __rejected_frame(self, parent) -> tk.Frame:
         frame = tk.Frame(parent)
         self.rejected = tk.IntVar()
-        reasons = Parameters.get_parameters()["rejected"].strip("][").split(", ")
+        reasons = self.reasons
         self.max_rejected = len(reasons) - 1
 
         row = 0
         for value, reason in enumerate(reasons):
             tk.Radiobutton(
                 frame,
-                text=reason[1:-1] + " (" + str(value) + ")",
+                text=reason + " (" + str(value) + ")",
                 value=value,
                 variable=self.rejected,
             ).grid(row=row, column=0, sticky="w")

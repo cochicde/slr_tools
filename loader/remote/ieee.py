@@ -1,16 +1,16 @@
-from database.remote.connectors.scopus import ScopusConnector
-from literature.data import ResourceData
-from query.exporter.scopus import ScopusQuery
+from loader.remote.connectors.ieee import IEEEConnector
+from model.resource import ResourceData
+from query.exporter.ieee import IEEEQuery
 from query.exporter.serializer import get_query_string
 from query.model.query import Query
 
 
-class ScopusDatabase:
+class IEEE:
     def __init__(self, query: str) -> None:
-        self.connector = ScopusConnector(query)
+        self.connector = IEEEConnector(query)
 
     def __init__(self, query: Query) -> None:
-        self.connector = ScopusConnector(get_query_string(query, ScopusQuery))
+        self.connector = IEEEConnector(get_query_string(query, IEEEQuery))
 
     def request_all(self) -> list[ResourceData]:
         return self.connector.request_all()

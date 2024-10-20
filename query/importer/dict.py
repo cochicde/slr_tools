@@ -6,6 +6,14 @@ __OPERATOR_VALUE_MAP__ = {"and": Operator.AND, "or": Operator.OR}
 
 
 def operator_from_string(operator: str) -> Operator:
+    """ Get the operator from its string representation
+
+    Args:
+        operator (str): string representation of an operator
+
+    Returns:
+        Operator: Operator value 
+    """
     return __OPERATOR_VALUE_MAP__.get(operator.lower(), None)
 
 
@@ -18,10 +26,20 @@ __FEILD_VALUE_MAP__ = {
 
 
 def field_from_string(field: str) -> Field:
+    """ Get field from its string representation
+
+    Args:
+        field (str): string representation of a field
+
+    Returns:
+        Field: Field value
+    """
     return __FEILD_VALUE_MAP__.get(field.lower(), None)
 
 
 class SingleQueryKeys(Enum):
+    """ Possible keys for a SingleQuery representation
+    """
     NEGATED = 0
     OPERATOR = 1
     FIELDS = 2
@@ -39,6 +57,20 @@ __SINGLE_QUERY_DEFAULT_OPERATOR__ = Operator.OR
 
 
 def single_query_from_dict(query: dict) -> SingleQuery:
+    """ Get a SingleQuery representation from a dictionary object
+
+    Args:
+        query (dict): Dictionary with the key/values of a single query
+
+    Raises:
+        Exception: If a negated field does not have a boolean type
+        Exception: An unrecognized operator is found
+        Exception: A fields or terms key is missing
+        Exception: A field is unrecognized
+
+    Returns:
+        SingleQuery: Single query representation
+    """
     fields = []
     terms = []
 
@@ -108,6 +140,8 @@ def single_query_from_dict(query: dict) -> SingleQuery:
 
 
 class QueryKeys(Enum):
+    """ Possible keys for a Query representation
+    """
     QUERIES = 0
     OPERATOR = 1
 
@@ -121,6 +155,17 @@ __QUERY_DEFAULT_OPERATOR__ = Operator.AND
 
 
 def query_from_dict(query: dict) -> Query:
+    """ Get a Query representation from a dictionary object
+
+    Args:
+        query (dict): Dictionary with the key/values of a single query
+
+    Raises:
+        Exception: An unrecognized operator is found
+
+    Returns:
+        Query: Query representation
+    """
     queries = []
 
     operator_key = __QUERY_KEY_MAP__[QueryKeys.OPERATOR]

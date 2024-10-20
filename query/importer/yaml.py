@@ -1,9 +1,21 @@
 import yaml
 
-from query.controller.dict import query_from_dict
+from query.model.query import Query
+from query.importer.dict import query_from_dict
 
 
-def query_from_yaml(file: str):
+def query_from_yaml(file: str) -> Query:
+    """ Get a query object from a yml file
+
+    Args:
+        file (str): Path to the yml file
+
+    Raises:
+        Exception: If the yml file is not properly formed
+
+    Returns:
+        Query: Query object representation
+    """
     with open(file, encoding="utf-8") as yaml_file:
         try:
             data = yaml.load(yaml_file, Loader=yaml.FullLoader)
