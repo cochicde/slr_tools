@@ -89,7 +89,7 @@ You need to pass a configuration file in `yml` with the rejected options, the da
 
 Use the left/right arrow to go to the next/previous scientific resource. Up/down will change the `rejected` value of the resource (or the number according to it can also be used). The `rejected` options you have in your configuration file are going to be loaded and shown on the right of the GUI with a shortcut for each one of them (provided you have less than 10).
 
-Use `t` to start writing notes. `
+Use `t` to start writing notes.
 
 s` or `d` if you want to not save it or not for later.
 
