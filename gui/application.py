@@ -95,7 +95,7 @@ class ApplicationGUI:
         self.old_state = None
 
         self.database = Sqlite3(args["database"])
-        self.entries = self.database.get_not_reviewed()
+        self.entries = self.database.get_entries()
 
         if len(self.entries) != 0:
             self.current_pos = 0

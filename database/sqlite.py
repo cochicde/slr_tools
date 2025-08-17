@@ -164,7 +164,7 @@ class Sqlite3(Connector):
         
         return None
 
-    def get_not_reviewed(self) -> list[tuple[int, Entry]]:
+    def get_entries(self, rejected: [int] = [0]) -> list[tuple[int, Entry]]:
         """ Get all entries that are not reviewed yet (rejected = 0)
     
         Returns:
@@ -185,7 +185,7 @@ class Sqlite3(Connector):
             + " FROM "
             + Sqlite3.__MAIN_TABLE_NAME
             + links_inner_joins
-            + " WHERE rejected is 0"
+            + " WHERE rejected IN (" + ", ".join(str(r) for r in rejected) + ")"
         ).fetchall()
 
     def __update_field(self, id: int, field: str, value: str, save: bool = False):

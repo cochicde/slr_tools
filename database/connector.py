@@ -24,8 +24,8 @@ class Connector:
         """
         pass
 
-    def get_not_reviewed(self) -> list[(int, Entry)]:
-        """ Get all not reviewed entries
+    def get_entries(self, rejected: [int]) -> list[(int, Entry)]:
+        """ Get all entries with the given rejected values
         """
         pass
 
