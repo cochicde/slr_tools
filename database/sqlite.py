@@ -164,7 +164,7 @@ class Sqlite3(Connector):
         
         return None
 
-    def get_entries(self, rejected: [int] = [0]) -> list[tuple[int, Entry]]:
+    def get_entries(self, rejected: [int]) -> list[tuple[int, Entry]]:
         """ Get all entries that are not reviewed yet (rejected = 0)
     
         Returns:

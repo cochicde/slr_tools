@@ -95,7 +95,18 @@ class ApplicationGUI:
         self.old_state = None
 
         self.database = Sqlite3(args["database"])
-        self.entries = self.database.get_entries()
+
+        reasons_to_show = args.get("show", [])
+        rejected_to_show = []
+
+        for reason in reasons_to_show:
+            if reason in self.reasons:
+                rejected_to_show.append(self.reasons.index(reason))
+            else:
+                print(f"Warning: {reason} to show is not a valid rejected reason")
+
+
+        self.entries = self.database.get_entries(rejected_to_show if len(rejected_to_show) > 0 else [0])
 
         if len(self.entries) != 0:
             self.current_pos = 0

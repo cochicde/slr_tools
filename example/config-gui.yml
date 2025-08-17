@@ -6,5 +6,8 @@ config:
     - "Some other reason"
     - "Third reason"
   search: "PLC"
+  show:
+    - "Unknwon"
+    - "Some other reason"
 
 
