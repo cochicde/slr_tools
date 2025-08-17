@@ -179,13 +179,17 @@ class Sqlite3(Connector):
             links_columns += ", " + table + ".link AS " + table
             links_inner_joins += " LEFT JOIN " + table + " ON main.id=" + table + ".id"
 
+        where_statement = ""
+        if len(rejected) > 0:
+            where_statement = " WHERE rejected IN (" + ", ".join(str(r) for r in rejected) + ")"
+
         return cursor.execute(
             "SELECT main.id, main.doi, main.isbn, main.title, main.abstract, main.keywords, main.rejected, main.later, main.notes"
             + links_columns
             + " FROM "
             + Sqlite3.__MAIN_TABLE_NAME
             + links_inner_joins
-            + " WHERE rejected IN (" + ", ".join(str(r) for r in rejected) + ")"
+            + where_statement
         ).fetchall()
 
     def __update_field(self, id: int, field: str, value: str, save: bool = False):

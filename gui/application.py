@@ -106,7 +106,7 @@ class ApplicationGUI:
                 print(f"Warning: {reason} to show is not a valid rejected reason")
 
 
-        self.entries = self.database.get_entries(rejected_to_show if len(rejected_to_show) > 0 else [0])
+        self.entries = self.database.get_entries(rejected_to_show)
 
         if len(self.entries) != 0:
             self.current_pos = 0
