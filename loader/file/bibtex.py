@@ -4,6 +4,8 @@ from pybtex.database import parse_file
 from database.entry import Entry, EntrySource
 from model.resource import ResourceData
 
+import os
+
 class Fields(StrEnum):
     """ Available fields in a bibtex entry
     """
@@ -49,11 +51,12 @@ def get_entries(source_file: str) -> list[Entry]:
     """
     result = []
     bibtex_data = parse_file(source_file)
+    source_file_no_ext = os.path.splitext(os.path.basename(source_file))[0]
     for entry in bibtex_data.entries.values():
         result.append(
                 Entry(
                     ResourceData(entry.fields.get(Fields.DOI, ""), entry.fields.get(Fields.ISBN, ""), entry.fields.get(Fields.TITLE, ""), entry.fields.get(Fields.ABSTRACT, ""), entry.fields.get(Fields.KEYWORDS, "").replace(",", " |")),
-                    [EntrySource("acm", entry.fields.get(Fields.URL, ""))],
+                    [EntrySource(source_file_no_ext, entry.fields.get(Fields.URL, ""))],
                 )
             )
 

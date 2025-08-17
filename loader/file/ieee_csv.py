@@ -1,5 +1,6 @@
 from enum import IntEnum
 import csv
+import os
 
 from database.entry import Entry, EntrySource
 from model.resource import ResourceData
@@ -48,11 +49,12 @@ def get_entries(source_file: str) -> list[Entry]:
     result = []
     with open(source_file) as file:
         csv_input = csv.reader(file, delimiter=',', quoting=csv.QUOTE_ALL)
+        source_file_no_ext = os.path.splitext(os.path.basename(source_file))[0]
         for line in csv_input:
             result.append(
                     Entry(
                         ResourceData(line[Headers.DOI], line[Headers.ISBNS], line[Headers.DOCUMENT_TITLE], line[Headers.ABSTRACT], line[Headers.AUTHOR_KEYWORDS].replace(";", " | ")),
-                        [EntrySource("ieee", line[Headers.PDF_LINK])],
+                        [EntrySource(source_file_no_ext, line[Headers.PDF_LINK])],
                     )
                 )
 

@@ -18,7 +18,7 @@ class CustomText(tk.Text):
     """
 
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master, borderwidth=0, *args, **kwargs)
         self.master = master
 
         # sample tag
